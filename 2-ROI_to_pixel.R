@@ -1,36 +1,37 @@
 library(tidyverse)
 library(sf)
-library(data.table)
-library(RImageJROI)
+# library(data.table)
+# library(RImageJROI)
 library(readxl)
-
+library(RColorBrewer)
 
 # Import Data -------------------------------------------------------------
 
 
 # Read segmented cell (sc) ROI (8-bit color) histogram measurements *WITH EDGE ROIs*
-file_list_sc <- list.files(path = r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Map\ROI_to_pixel_py\Slide61\1-ImageJ_cell_ROI_to_pixel_histograms)",
+file_list_sc <- list.files(path = r"(data\2-ROI_to_pixel\1-ImageJ_cell_ROI_to_pixel_histograms)",
                         full.names = T)
 
 sc_hist <- map(file_list_sc, data.table::fread, data.table = F)
 
 
 # Read pixel ROI (8-bit color) histogram measurements
-file_list_pix <- list.files(path = r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Map\ROI_to_pixel_py\Slide61\2-ImageJ_pixel_ROI_histograms)",
+file_list_pix <- list.files(path = r"(data\2-ROI_to_pixel\2-ImageJ_pixel_ROI_histograms)",
                         full.names = T)
 
 pix_hist <- map(file_list_pix, data.table::fread, data.table = F)
 
 
 # Read pixel ROI name to Mass Spec pixel name correlation table (manually annotated)
-pix_ms_names <- read_xlsx(path=r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Map\ROI_to_pixel_py\Slide61\Slide61_Pixel_Flu_RoiSet_IJ names_to_pixel_names.xlsx)")
+pix_ms_names <- read_xlsx(path = r"(data\2-ROI_to_pixel\Slide61_Pixel_Flu_RoiSet_IJ names_to_pixel_names.xlsx)")
 
 # Load segmented cell ROIs (in correct order)
-load("RD1-roi_polygons_with_edges.RData")
+(load("output/RD1-ROI_mapping_and_cell_type_assignment/ROI_polygons_with_cell_types.RData"))
 
 
 # Process Segmented Cell Histogram Data -----------------------------------
 
+dir.create("output/RD2-ROI_to_pixel")
 
 # Extract file order from file name
 file_list_sc_2 <- file_list_sc %>% 
@@ -130,14 +131,13 @@ cell_to_pix  <- full_join(roi_all_sf_polygon, cell_to_pix, by = "index.sc")%>%
     relocate(pix.MS.name, .before = cell.roi) %>% 
     relocate(cell_type, .before = cell.roi)
 
-if (!file.exists("RD2-Slide61_roi_w_edges_and_pixel_names.RData")) {
-    save(cell_to_pix, file = "RD2-Slide61_roi_w_edges_and_pixel_names.RData")
-}
+
+save(cell_to_pix, file = "output/RD2-ROI_to_pixel/RD2-Slide61_roi_w_edges_and_pixel_names.RData")
 
 
 plot(cell_to_pix)
 
-library(RColorBrewer)
+
 
 pal <- brewer.pal(n = 12, name = "Paired")
 
@@ -152,7 +152,8 @@ ggplot(cell_to_pix)+
           axis.text.y=element_blank(),
           axis.ticks.y=element_blank())
 
-ggsave("../HuBMAP_Updates/Pixel Assignment.tiff", device = "tiff", dpi = 300, width = 1200, height = 1100, units = "px")
+ggsave("output/RD2-ROI_to_pixel/Pixel Assignment.png", 
+dpi = 300, width = 1200, height = 1100, units = "px")
 
 
 

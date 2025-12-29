@@ -7,7 +7,7 @@ library(readxl)
 
 # Import data -------------------------------------------------------------
 
-load("RD2-Slide61_roi_w_edges_and_pixel_names.RData")
+load("output/RD2-ROI_to_pixel/RD2-Slide61_roi_w_edges_and_pixel_names.RData")
 
 p_data <- read_excel(path = "../../../Protein_Data/MS_output/processed/3D_mapping_no_imputation.xlsx",
                    sheet = "noinputation_combined_r", 

@@ -12,14 +12,14 @@ for roi in RoiManager.getInstance():
 	m = rm.getRoiIndex(roi);
 	rm.select(m);
 	IJ.run(imp, "Color Histogram", "");
-	root = "C:/Users/kell343/OneDrive - PNNL/Documents/11 HuBMAP/Protein_Data/Image/Immunostaining/Fluorescence/Custom_composites/Fiji_mask/Slide61_mask_cell_boundaries/Imagej_py_Slide61_cropped_colors"
+	root = "data/1-ImageJ_cell_ROI/ROI_RGB_values"
 	m = str(m)
 	suffix = "csv"
 	path = os.path.join(root, m + '.' + suffix)
 	IJ.saveAs("Results", path);
 	WindowManager.closeAllWindows()
 	
-	imagePath = 'C:/Users/kell343/OneDrive - PNNL/Documents/11 HuBMAP/Protein_Data/Image/Immunostaining/Fluorescence/Custom_composites/Fiji_mask/Slide61_mask_cell_boundaries/Slide61-islet23_with_cell_boundaries_and_edges/Slide61-islet23_with_cell_bound_edge_crop/cropped - Copy.tif'
+	imagePath = 'data/1-ImageJ_cell_ROI/cropped.tif'
 	imp = IJ.openImage(imagePath)
 	imp.show(imagePath)
 	
