@@ -1,6 +1,8 @@
 library(tidyverse)
 library(sf)
-library(glue)
+# library(glue)
+library(furrr)
+plan("multisession", workers = 2)
 
 
 
@@ -413,7 +415,6 @@ protein_names <- protein_names %>%
     #     load("RD5_3-All_protein_maps.RData")
     # }
 
-    
     # write maps to png
     missing_threshold <- 0.5
     
@@ -424,7 +425,7 @@ protein_names <- protein_names %>%
   
     save_plots <- \(x, y) {
 	    
-	    pix_to_ms_floop <- pix_to_ms[, x]
+	    pix_to_ms_floop <- pix_to_ms[, c(x, "geometry")]
     
         p <- ggplot(pix_to_ms_floop)+
 			geom_sf(aes(fill = .data[[x]]))+
@@ -449,9 +450,10 @@ protein_names <- protein_names %>%
 
     }
     
-    walk2(.x = plots_to_save$uniprot, 
+    future_walk2(.x = plots_to_save$uniprot, 
           .y = plots_to_save$`Gene names  (primary )`,
-          .f = save_plots)
+          .f = save_plots, 
+		  .progress = TRUE)
 # }
 
 
