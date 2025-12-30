@@ -7,18 +7,20 @@ library(glue)
 # Import Data -------------------------------------------------------------
 
 
-load("output/RD3-ROI_and_pixel_to_MS/RD3_1-Slide61_roi_w_edges_pixels_ms_absolute.RData")
+(load("output/RD3-ROI_and_pixel_to_MS/RD3_1-Slide61_roi_w_edges_pixels_ms_absolute.RData"))
 pix_to_ms <- old
 
 
-(load("RD4_1-Proteins_w_no_RNASeq.RData"))
+(load("output/RD4-RNA-Seq/RD4-Proteins_w_no_RNASeq.RData"))
 
-(load("RD4_2-RNA-Seq_cell_protein_ratios.RData"))
+(load("output/RD4-RNA-Seq/RD4-RNA-Seq_cell_protein_ratios.RData"))
 
 
-gene_name <- read_tsv(file = "../../../../Uniprot Downloads/Human_sp_tr_primary_gene_name_20220531.tab")
+gene_name <- read_tsv(file = "data/Human_sp_tr_primary_gene_name_20220531.tab")
 
 # Process -----------------------------------------------------------------
+
+dir.create("output/RD5-final_protein_maps")
 
 # Distribute protein intensity using RNA-Seq data
 pix_to_ms_data_save <- filter(pix_to_ms, !is.na(cell.roi))
@@ -36,116 +38,130 @@ missing_rna <- anti_join(data.frame(uniprot=c1), data.frame(uniprot=c2)) %>%
     select(-Status)
 # writexl::write_xlsx(x = missing_rna, path = "Missing_RNASeq_Proteins.xlsx")
 
-# This takes >2hrs
-if(!file.exists("RD5_1-RNA-Seq_distributed_protein_absolute_intensities.RData")){
+## apply cell type ratios -----
+# if(!file.exists("output/RD5-final_protein_maps/RD5_1-RNA-Seq_distributed_protein_absolute_intensities.RData")){
 
-    for(j in colnames(select(protein_ratios, 2:last_col()))){
-        for(i in 1:nrow(pix_to_ms_data)){
-            pix_to_ms_data[i, j] <- pix_to_ms_data[[i, j]] * protein_ratios[protein_ratios$celltype == pix_to_ms_data[[i, "cell_type"]], j]
-        }
-    }
+# Vectorized approach: join ratios by cell_type, then multiply
+protein_cols <- colnames(select(protein_ratios, 2:last_col()))
+
+# Create a lookup matrix from protein_ratios indexed by celltype
+ratio_matrix <- protein_ratios %>%
+	column_to_rownames("celltype") %>%
+	as.matrix()
+
+# Get the ratio for each row based on its cell_type
+cell_types <- pix_to_ms_data$cell_type
+ratio_lookup <- ratio_matrix[cell_types, protein_cols, drop = FALSE]
+
+# Extract protein data as matrix, multiply element-wise, put back
+protein_data <- as.matrix(st_drop_geometry(pix_to_ms_data)[, protein_cols])
+pix_to_ms_data[, protein_cols] <- protein_data * ratio_lookup
+
+pix_to_ms <- bind_rows(pix_to_ms_data, pix_to_ms_na)
     
-    pix_to_ms <- bind_rows(pix_to_ms_data, pix_to_ms_na)
-    
-    save(pix_to_ms, file = "RD5_1-RNA-Seq_distributed_protein_absolute_intensities.RData")
-} else {
-    load("RD5_1-RNA-Seq_distributed_protein_absolute_intensities.RData")
-}
-
-plot(pix_to_ms)
+#     save(pix_to_ms, file = "output/RD5-final_protein_maps/RD5_1-RNA-Seq_distributed_protein_absolute_intensities.RData")
+# } else {
+#     load("output/RD5-final_protein_maps/RD5_1-RNA-Seq_distributed_protein_absolute_intensities.RData")
+# }
 
 
-low <- "midnightblue"
-high <- "yellow"
 
-source <- old
-source <-  pix_to_ms
 
-## Islet Markers
-# Pro-glucagon (P01275)
-ggplot(source)+
-    geom_sf(aes(fill = P01275))+
-    scale_fill_gradient(
-        low = low,
-        high = high)+
-    ggtitle("Pro-glucagon")+
-    theme(plot.title = element_text(hjust = 0.5))+
-    labs(fill = "Relative Intensity")+
-    theme(axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank())
 
-# Insulin (P01308)
-ggplot(source)+
-    geom_sf(aes(fill = P01308))+
-    scale_fill_gradient(
-        low = low,
-        high = high)+
-    ggtitle("Insulin")+
-    theme(plot.title = element_text(hjust = 0.5))+
-    labs(fill = "Relative Intensity")+
-    theme(axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank())
+# plot(pix_to_ms)
 
-# Secretogranin-2 (P13521)
-ggplot(source)+
-    geom_sf(aes(fill = P13521))+
-    scale_fill_gradient(
-        low = low,
-        high = high)+
-    ggtitle("Secretogranin-2")+
-    theme(plot.title = element_text(hjust = 0.5))+
-    labs(fill = "Relative Intensity")+
-    theme(axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank())
 
-# cell type
-ggplot(source)+
-    geom_sf(aes(fill = cell_type))+
-    # scale_fill_gradient(
-    #     low = low,
-    #     high = high)+
-    ggtitle("Cell type")+
-    theme(plot.title = element_text(hjust = 0.5))+
-    labs(fill = "Relative Intensity")+
-    theme(axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank())
+# low <- "midnightblue"
+# high <- "yellow"
 
-# Pixel
-ggplot(pix_to_ms_data)+
-    geom_sf(aes(fill = pixel))+
-    # scale_fill_gradient(
-    #     low = low,
-    #     high = high)+
-    ggtitle("Pixel")+
-    theme(plot.title = element_text(hjust = 0.5),
-          legend.position = "none")+
-    labs(fill = "Relative Intensity")+
-    theme(axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank())
+# source <- old
+# source <-  pix_to_ms
 
-# Secretogranin-2 (P13521)
-ggplot(old)+
-    geom_sf(aes(fill = P13521))+
-    scale_fill_gradient(
-        low = low,
-        high = high)+
-    ggtitle("Secretogranin-2")+
-    theme(plot.title = element_text(hjust = 0.5))+
-    labs(fill = "Relative Intensity")+
-    theme(axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank())
+# ## Islet Markers
+# # Pro-glucagon (P01275)
+# ggplot(source)+
+#     geom_sf(aes(fill = P01275))+
+#     scale_fill_gradient(
+#         low = low,
+#         high = high)+
+#     ggtitle("Pro-glucagon")+
+#     theme(plot.title = element_text(hjust = 0.5))+
+#     labs(fill = "Relative Intensity")+
+#     theme(axis.text.x=element_blank(),
+#           axis.ticks.x=element_blank(),
+#           axis.text.y=element_blank(),
+#           axis.ticks.y=element_blank())
+
+# # Insulin (P01308)
+# ggplot(source)+
+#     geom_sf(aes(fill = P01308))+
+#     scale_fill_gradient(
+#         low = low,
+#         high = high)+
+#     ggtitle("Insulin")+
+#     theme(plot.title = element_text(hjust = 0.5))+
+#     labs(fill = "Relative Intensity")+
+#     theme(axis.text.x=element_blank(),
+#           axis.ticks.x=element_blank(),
+#           axis.text.y=element_blank(),
+#           axis.ticks.y=element_blank())
+
+# # Secretogranin-2 (P13521)
+# ggplot(source)+
+#     geom_sf(aes(fill = P13521))+
+#     scale_fill_gradient(
+#         low = low,
+#         high = high)+
+#     ggtitle("Secretogranin-2")+
+#     theme(plot.title = element_text(hjust = 0.5))+
+#     labs(fill = "Relative Intensity")+
+#     theme(axis.text.x=element_blank(),
+#           axis.ticks.x=element_blank(),
+#           axis.text.y=element_blank(),
+#           axis.ticks.y=element_blank())
+
+# # cell type
+# ggplot(source)+
+#     geom_sf(aes(fill = cell_type))+
+#     # scale_fill_gradient(
+#     #     low = low,
+#     #     high = high)+
+#     ggtitle("Cell type")+
+#     theme(plot.title = element_text(hjust = 0.5))+
+#     labs(fill = "Relative Intensity")+
+#     theme(axis.text.x=element_blank(),
+#           axis.ticks.x=element_blank(),
+#           axis.text.y=element_blank(),
+#           axis.ticks.y=element_blank())
+
+# # Pixel
+# ggplot(pix_to_ms_data)+
+#     geom_sf(aes(fill = pixel))+
+#     # scale_fill_gradient(
+#     #     low = low,
+#     #     high = high)+
+#     ggtitle("Pixel")+
+#     theme(plot.title = element_text(hjust = 0.5),
+#           legend.position = "none")+
+#     labs(fill = "Relative Intensity")+
+#     theme(axis.text.x=element_blank(),
+#           axis.ticks.x=element_blank(),
+#           axis.text.y=element_blank(),
+#           axis.ticks.y=element_blank())
+
+# # Secretogranin-2 (P13521)
+# ggplot(old)+
+#     geom_sf(aes(fill = P13521))+
+#     scale_fill_gradient(
+#         low = low,
+#         high = high)+
+#     ggtitle("Secretogranin-2")+
+#     theme(plot.title = element_text(hjust = 0.5))+
+#     labs(fill = "Relative Intensity")+
+#     theme(axis.text.x=element_blank(),
+#           axis.ticks.x=element_blank(),
+#           axis.text.y=element_blank(),
+#           axis.ticks.y=element_blank())
 
 
 
@@ -185,11 +201,12 @@ pix_to_ms <- pix_to_ms %>%
     select(!colnames(new_missing))
 
 
-if(!file.exists("RD5_2-RNA-Seq_distributed_protein_relative_intensities.RData")){
-    save(pix_to_ms, file = "RD5_2-RNA-Seq_distributed_protein_relative_intensities.RData")
-} else {
-    load("RD5_2-RNA-Seq_distributed_protein_relative_intensities.RData")
-}
+# if(!file.exists("output/RD5-final_protein_maps/RD5-RNA-Seq_distributed_protein_relative_intensities.RData")){
+# save
+save(pix_to_ms, file = "output/RD5-final_protein_maps/RD5-RNA-Seq_distributed_protein_relative_intensities.RData")
+# } else {
+#     load("output/RD5-final_protein_maps/RD5-RNA-Seq_distributed_protein_relative_intensities.RData")
+# }
 
 
 low <- "midnightblue"
@@ -397,15 +414,18 @@ if (save_maps) {
 
     
     # write maps to png (takes >30 min) 
-    missing_cut <- 0.5
+    missing_threshold <- 0.5
     
     plots_to_save <- protein_names %>% 
-        filter(missingness < missing_cut)
+        filter(missingness < missing_threshold)
     
+    dir.create("output/RD5-final_protein_maps/final_protein_maps")
+  
     save_plots <- \(x, y) {
+        plot(maps[[y]])
         ggsave(filename = glue("{y}_{x}.png"),
-               plot = maps[[y]],
-               path = "Slide_61_Final_Protein_Maps_missingness_50pct_Unimputed",
+               plot = p,
+               path = "output/RD5-final_protein_maps/final_protein_maps",
                device = "png",
                dpi = 300,
                width = 4,
@@ -424,7 +444,7 @@ options(error=recover)
 
 
 library(gridExtra)
-load("RD5_2-RNA-Seq_distributed_protein_relative_intensities.RData")
+load("output/RD5-final_protein_maps/RD5-RNA-Seq_distributed_protein_relative_intensities.RData")
 
 
 low <- "midnightblue"
