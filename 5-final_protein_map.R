@@ -7,7 +7,7 @@ library(glue)
 # Import Data -------------------------------------------------------------
 
 
-load("RD3_1-Slide61_roi_w_edges_pixels_ms_absolute.RData")
+load("output/RD3-ROI_and_pixel_to_MS/RD3_1-Slide61_roi_w_edges_pixels_ms_absolute.RData")
 pix_to_ms <- old
 
 
