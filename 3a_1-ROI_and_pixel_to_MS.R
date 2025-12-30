@@ -9,18 +9,18 @@ library(readxl)
 
 (load("output/RD2-ROI_to_pixel/RD2-Slide61_roi_w_edges_and_pixel_names.RData"))
 
-p_data <- read_excel(path = "data/3-ROI_and_pixel_to_MS/3D_mapping_no_imputation.xlsx",
-                   sheet = "noinputation_combined_r", 
+p_data <- read_excel(path = "data/3-ROI_and_pixel_to_MS/3D_mapping_protein_abundance.xlsx",
+                   sheet = "noinputation_combined", 
                    na = "NaN")
 
 alpha_cell_count <- read_excel(path = "data/3-ROI_and_pixel_to_MS/3D_mapping_IF_summary.xlsx",
-                               sheet = "alpha") #James count
+                               sheet = "alpha")
 
 beta_cell_count <- read_excel(path = "data/3-ROI_and_pixel_to_MS/3D_mapping_IF_summary.xlsx",
-                               sheet = "beta") #James count
+                               sheet = "beta")
 
 acinar_cell_count <- read_excel(path = "data/3-ROI_and_pixel_to_MS/3D_mapping_IF_summary.xlsx",
-                               sheet = "acinar") #James count
+                               sheet = "acinar")
 
 
 

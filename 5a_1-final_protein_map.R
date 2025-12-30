@@ -2,7 +2,7 @@ library(tidyverse)
 library(sf)
 # library(glue)
 library(furrr)
-plan("multisession", workers = 2)
+plan(multisession, workers = 2)
 
 
 
@@ -453,7 +453,8 @@ protein_names <- protein_names %>%
     future_walk2(.x = plots_to_save$uniprot, 
           .y = plots_to_save$`Gene names  (primary )`,
           .f = save_plots, 
-		  .progress = TRUE)
+		  .progress = TRUE,
+		  .options = furrr_options(seed = NULL))
 # }
 
 
