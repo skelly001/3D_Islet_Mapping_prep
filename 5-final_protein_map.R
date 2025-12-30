@@ -320,7 +320,7 @@ ggplot(source)+
 # ggsave("./Final_Sample_Images/Img_Carboxypeptidase_A1_RNA-Seq.tiff", device = "tiff", dpi = 300, width = 1570, height = 1180, units = "px")
 
 
-# Save all ~2000 protein maps ----
+# Save all protein maps ----
 
 # get gene names
 uniprotID <- pix_to_ms %>% 
@@ -363,82 +363,98 @@ calc_missing_v <- Vectorize(calc_missing)
 # Remove proteins with no RNASeq data or too much missingness (skip plotting)
 protein_names <- protein_names %>% 
     select(uniprot, `Gene names  (primary )`) %>% 
-    filter(!protein_names$uniprot %in% skip$Entry) %>% 
-    mutate(missingness = calc_missing_v(uniprot)) 
+    filter(!.$uniprot %in% skip$Entry) %>% 
+		filter(!duplicated(.$`Gene names  (primary )`)) %>% 
+    mutate(missingness = calc_missing_v(uniprot))
 
 # save(protein_names, file = "RD5_4-protein_names_with missingness.RData")
 
 
-plot_maps <- \(x, y) {
+# plot_maps <- \(x, y) {
     
     
-    pix_to_ms_floop <- pix_to_ms[, x]
+#     pix_to_ms_floop <- pix_to_ms[, x]
     
-        p <- ggplot(pix_to_ms_floop)+
-                geom_sf(aes(fill = eval(parse(text = x))))+
-                scale_fill_gradient(
-                    low = low,
-                    high = high)+
-                ggtitle(glue("Protein: {y}, Uniprot ID: {x}"))+
-                theme(plot.title = element_text(hjust = 0.5))+
-                labs(fill = "Relative Intensity")+
-                theme(axis.text.x=element_blank(),
-                      axis.ticks.x=element_blank(),
-                      axis.text.y=element_blank(),
-                      axis.ticks.y=element_blank(),
-                      plot.title = element_text(size = 20))
+#         p <- ggplot(pix_to_ms_floop)+
+#                 geom_sf(aes(fill = eval(parse(text = x))))+
+#                 scale_fill_gradient(
+#                     low = low,
+#                     high = high)+
+#                 ggtitle(glue("Protein: {y}, Uniprot ID: {x}"))+
+#                 theme(plot.title = element_text(hjust = 0.5))+
+#                 labs(fill = "Relative Intensity")+
+#                 theme(axis.text.x=element_blank(),
+#                       axis.ticks.x=element_blank(),
+#                       axis.text.y=element_blank(),
+#                       axis.ticks.y=element_blank(),
+#                       plot.title = element_text(size = 20))
         
 
 
-        return(p)
+#         return(p)
 
-}
+# }
 
 
-save_maps <- FALSE
+# save_maps <- FALSE
 
-if (save_maps) {
+# if (save_maps) {
     
-    # write maps to RData (takes >30 min)
-    if (!file.exists("RD5_3-All_protein_maps.RData")) {
-        maps <- map2(.x = protein_names$uniprot, .y = protein_names$`Gene names  (primary )`, 
-                                        .f = plot_maps,
-                                        .progress = TRUE)
+    # # write maps to RData (takes >30 min)
+    # if (!file.exists("RD5_3-All_protein_maps.RData")) {
+    #     maps <- map2(.x = protein_names$uniprot, .y = protein_names$`Gene names  (primary )`, 
+    #                                     .f = plot_maps,
+    #                                     .progress = TRUE)
         
-        names(maps) <- protein_names$`Gene names  (primary )`
+    #     names(maps) <- protein_names$`Gene names  (primary )`
     
-        save(maps, file = "RD5_3-All_protein_maps.RData")
-    } else {
-        load("RD5_3-All_protein_maps.RData")
-    }
+    #     save(maps, file = "RD5_3-All_protein_maps.RData")
+    # } else {
+    #     load("RD5_3-All_protein_maps.RData")
+    # }
 
     
-    # write maps to png (takes >30 min) 
+    # write maps to png
     missing_threshold <- 0.5
     
     plots_to_save <- protein_names %>% 
-        filter(missingness < missing_threshold)
-    
+        filter(missingness < missing_threshold)  
+  
     dir.create("output/RD5-final_protein_maps/final_protein_maps")
   
     save_plots <- \(x, y) {
-        plot(maps[[y]])
-        ggsave(filename = glue("{y}_{x}.png"),
-               plot = p,
-               path = "output/RD5-final_protein_maps/final_protein_maps",
-               device = "png",
-               dpi = 300,
-               width = 4,
-               height = 3,
-               units = "in")
+	    
+	    pix_to_ms_floop <- pix_to_ms[, x]
+    
+        p <- ggplot(pix_to_ms_floop)+
+			geom_sf(aes(fill = .data[[x]]))+
+			scale_fill_gradient(
+				low = low,
+				high = high)+
+			# ggtitle(str_glue("{y}"))+
+			# theme(plot.title = element_text(hjust = 0.5))+
+			labs(fill = "Relative Intensity")+
+			theme(axis.text.x=element_blank(),
+					axis.ticks.x=element_blank(),
+					axis.text.y=element_blank(),
+					axis.ticks.y=element_blank(),
+					plot.title = element_text(size = 20))
+		
+		png(filename = str_glue("output/RD5-final_protein_maps/final_protein_maps/{y}_{x}.png"),
+	    	width = 1570,
+	    	height = 1100,
+			res = 300)
+	    plot(p)  
+	    dev.off()
+
     }
     
     walk2(.x = plots_to_save$uniprot, 
           .y = plots_to_save$`Gene names  (primary )`,
           .f = save_plots)
-}
+# }
 
-options(error=recover)
+
 
 # Plots for HuBMAP Update Presentation ------------------------------------
 
@@ -504,9 +520,8 @@ SCG2 <- ggplot(source)+
 
 grob1 <- grid.arrange(SCG2, INS, GCG, nrow = 1)
 
-ggsave(filename = "../HuBMAP_Updates/Islet Protein Markers.tiff", 
+ggsave(filename = "output/RD5-final_protein_maps/Islet Protein Markers.png", 
        plot = grob1, 
-       device = "tiff",
        width = 2315,
        height = 947,
        units = "px")
@@ -566,12 +581,11 @@ CPA1 <- ggplot(source)+
 
 grob2 <- grid.arrange(REG1A, REG1B, CPA1, nrow = 1)
 
-# ggsave(filename = "../HuBMAP_Updates/Acinar Protein Markers.tiff", 
-#        plot = grob2, 
-#        device = "tiff",
-#        width = 2315,
-#        height = 947,
-#        units = "px")
+ggsave(filename = "output/RD5-final_protein_maps/Acinar Protein Markers.png", 
+       plot = grob2, 
+       width = 2315,
+       height = 947,
+       units = "px")
 
 
 
