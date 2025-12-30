@@ -284,7 +284,7 @@ spatPlot2D(gobject = my_giotto_object,
 ##7-2_Spatial network
 plotStatDelaunayNetwork(gobject = my_giotto_object,
                         method = c("delaunayn_geometry"),
-                        maximum_distance = 100) ,
+                        maximum_distance = 100,
                         dimensions = 3)
 
 ?plotStatDelaunayNetwork()
@@ -538,4 +538,4 @@ names(ICG_genes) = ICG_genes_types
 
 #8_Spatial proximity-associatede cell-cell interactions
 cell_type_vector <- readRDS(paste0(data_directory,"/", "cell_type_vector.RDS"))
-cell_type_vectorwt
+cell_type_vector
