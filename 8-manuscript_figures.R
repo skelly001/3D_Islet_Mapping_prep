@@ -12,7 +12,7 @@ library(gridExtra)
 
 
 # pseudo-single cell proteomics maps
-(load("RD5_2-RNA-Seq_distributed_protein_relative_intensities.RData"))
+(load("output/RD5-final_protein_maps/RD5-RNA-Seq_distributed_protein_relative_intensities.RData"))
 
 
 

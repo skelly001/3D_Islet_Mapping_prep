@@ -7,18 +7,18 @@ library(Seurat)
 
 
 # MS data
-load("output/RD3-ROI_and_pixel_to_MS/RD3_1-Slide61_roi_w_edges_pixels_ms_absolute.RData")
+(load("output/RD3-ROI_and_pixel_to_MS/RD3_1-Slide61_roi_w_edges_pixels_ms_absolute.RData"))
 ms_abs <- old
 rm(old)
 
 # RNA-Seq reference data
-fullref <- readRDS(r"(..\..\..\azimuth-references\human_pancreas_snakemake\seurat_objects\fullref.Rds)")
+fullref <- readRDS(r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\azimuth-references\human_pancreas_snakemake\seurat_objects\fullref.Rds)")
 
 # Uniprot accession to gene correlation
 # uniprot <- read.delim("../../../../Uniprot Downloads/Human_sp_tr_primary_gene_name_20220531.tab",
 #                       sep = "\t")
 
-uniprot <- data.table::fread(file = "../../../../Uniprot Downloads/uniprotkb_Human_2023_10_25.tsv.gz", 
+uniprot <- data.table::fread(file = "data/uniprotkb_Human_2023_10_25.tsv.gz", 
                              data.table = F,
                              stringsAsFactors = F,
                              showProgress = T,
@@ -26,6 +26,8 @@ uniprot <- data.table::fread(file = "../../../../Uniprot Downloads/uniprotkb_Hum
                              check.names = T)
 
 # Process -----------------------------------------------------------------
+
+dir.create("output/RD4-RNA-Seq")
 
 # RNA-Seq meta data
 meta <- fullref@meta.data %>% 
@@ -108,9 +110,10 @@ sct_counts2_remain <-  sct_counts2 %>%
     filter(missing == TRUE) %>% 
     select(Entry, gene)
 
-if (!file.exists("RD4_1-Proteins_w_no_RNASeq.RData")) {
-    save(sct_counts2_remain, file = "RD4_1-Proteins_w_no_RNASeq.RData")
-}
+# save
+save(sct_counts2_remain, file = "output/RD4-RNA-Seq/RD4-Proteins_w_no_RNASeq.RData")
+
+
 
 
 ## combine matching results
@@ -124,7 +127,7 @@ sct_counts <- sct_counts %>%
     t() %>%
     as.data.frame() %>% 
     `colnames<-`(.[1,]) %>% 
-    mutate(cell = rownames(.), .before = colnames(.)[1]) %>% #mult uniprot genes are correlated to single proteins. After checking RNA_seq, I will keep only the first observation in Gene col. from uniprot_clean
+    mutate(cell = rownames(.), .before = colnames(.)[1]) %>% 
     slice(2:nrow(.)) %>% 
     `rownames<-`(NULL)
 
@@ -171,9 +174,8 @@ prot_acinar <- protein_ratios %>%
 
 
 # Save
-if(!file.exists("RD4_2-RNA-Seq_cell_protein_ratios.RData")){
-    save(protein_ratios, file = "RD4_2-RNA-Seq_cell_protein_ratios.RData")
-}
+save(protein_ratios, file = "output/RD4-RNA-Seq/RD4-RNA-Seq_cell_protein_ratios.RData")
+
 
 
 
@@ -203,25 +205,25 @@ if(!file.exists("RD4_2-RNA-Seq_cell_protein_ratios.RData")){
 
 
 
-# missing proteins --------------------------------------------------------
+# # missing proteins --------------------------------------------------------
 
-main <- readxl::read_xlsx(path = r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Data\MS_output\processed\3D_mapping_no_imputation.xlsx)",
-                          sheet = "noinputation_combined_r")
+# main <- readxl::read_xlsx(path = r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Data\MS_output\processed\3D_mapping_no_imputation.xlsx)",
+#                           sheet = "noinputation_combined_r")
 
-subset <- readxl::read_xlsx(path = r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Data\MS_output\processed\3D_mapping.xlsx)",
-                          sheet = "log_inpu_r")
+# subset <- readxl::read_xlsx(path = r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Data\MS_output\processed\3D_mapping.xlsx)",
+#                           sheet = "log_inpu_r")
 
 
 
-main <- main %>% 
-    select(PROTID) %>% 
-    mutate(PROTID = sub("sp\\|(.*?)\\|.*", "\\1", PROTID))
+# main <- main %>% 
+#     select(PROTID) %>% 
+#     mutate(PROTID = sub("sp\\|(.*?)\\|.*", "\\1", PROTID))
 
-subset <- subset %>% 
-    select(PROTID)
+# subset <- subset %>% 
+#     select(PROTID)
 
-# proteins in subset w/o match in main (23) 
-missing <- anti_join(subset, main)
+# # proteins in subset w/o match in main (23) 
+# missing <- anti_join(subset, main)
 
 
 
