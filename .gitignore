@@ -59,7 +59,20 @@ rsconnect/
 !data/2-ROI_to_pixel/*.png
 *.xlsx
 *.RData
+*.rds
 
+
+# azimuth snakemake files  
+# track only original files provided by satijalab/azimuth-references
+azimuth-references/*
+!azimuth-references/*/
+azimuth-references/*/*
+!azimuth-references/*/*/
+azimuth-references/*/*/*
+!azimuth-references/**/*.R
+!azimuth-references/**/*.py
+!azimuth-references/**/config.json
+!azimuth-references/**/Snakefile
 
 
 
