@@ -1,3 +1,20 @@
+# ==============================================================================
+# RNA-Seq Reference Integration for Cell Type-Specific Protein Ratios
+# ==============================================================================
+# Script: 4a_1-RNA-Seq.R
+# Description: Matches MS protein accessions to RNA-Seq gene expression data
+#              from an Azimuth pancreas reference dataset. Uses UniProt
+#              annotations to link protein IDs to gene names and calculates
+#              cell type-specific gene expression ratios (alpha, beta, acinar) 
+#              for deconvolution of pixel-level proteomics data.
+#
+# Input: - output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_cell_roi_ms_absolute.rds
+#        - azimuth-references/human_pancreas_snakemake/seurat_objects/fullref.Rds
+#        - data/uniprotkb_Human_2023_10_25.tsv.gz
+# Output: - output/RD4-RNA-Seq/RD4-RNA-Seq_cell_gene_ratios.rds
+#         - output/RD4-RNA-Seq/RD4-proteins_no_RNA-Seq.rds
+# ==============================================================================
+
 library(tidyverse)
 library(sf)
 library(Seurat)
@@ -7,7 +24,7 @@ library(Seurat)
 
 
 # ROI with Protein abundance
-ms_abs <- readRDS("output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_roi_w_edges_pixels_ms_absolute.rds")
+ms_abs <- readRDS("output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_cell_roi_ms_absolute.rds")
 
 # RNA-Seq reference data
 fullref <- readRDS("azimuth-references/human_pancreas_snakemake/seurat_objects/fullref.Rds")
@@ -108,8 +125,7 @@ sct_counts2_remain <-  sct_counts2 %>%
     select(Entry, gene)
 
 # save
-saveRDS(sct_counts2_remain, file = "output/RD4-RNA-Seq/RD4-proteins_w_no_RNASeq.rds")
-# save(sct_counts2_remain, file = "output/RD4-RNA-Seq/RD4-proteins_w_no_RNASeq.RData")
+saveRDS(sct_counts2_remain, file = "output/RD4-RNA-Seq/RD4-proteins_no_RNA-Seq.rds")
 
 
 

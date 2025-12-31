@@ -1,3 +1,23 @@
+# ==============================================================================
+# Cell Type-Adjusted Spatial Protein Map Generation
+# ==============================================================================
+# Script: 5a_1-cell_type_adjusted_protein_maps.R
+# Description: Generates final spatial protein abundance maps by applying
+#              RNA-Seq-derived cell type expression ratios to MS protein data.
+#              Calculates slide-normalized relative abundances and creates
+#              QC visualization plots for islet (Glucagon, Insulin, Secretogranin-2)
+#              and acinar (REG1A, REG1B, CPA1) marker proteins. Exports individual
+#              protein maps for all proteins meeting quality thresholds.
+#
+# Input: - output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_cell_roi_ms_absolute.rds
+#        - output/RD4-RNA-Seq/RD4-RNA-Seq_cell_gene_ratios.rds
+#        - output/RD4-RNA-Seq/RD4-proteins_no_RNA-Seq.rds
+#        - data/Human_sp_tr_primary_gene_name_20220531.tab
+# Output: - output/RD5-final_protein_maps/islet_protein_markers.png
+#         - output/RD5-final_protein_maps/acinar_protein_markers.png
+#         - output/RD5-final_protein_maps/final_protein_maps/*.png
+# ==============================================================================
+
 library(gridExtra)
 library(tidyverse)
 library(sf)
@@ -9,10 +29,10 @@ plan(multisession, workers = 2)
 # Import Data -------------------------------------------------------------
 
 # ROI with Protein abundance
-pix_to_ms <- readRDS("output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_roi_w_edges_pixels_ms_absolute.rds")
+pix_to_ms <- readRDS("output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_cell_roi_ms_absolute.rds")
 
 # Proteins with no RNA-seq data
-no_rnaseq <- readRDS("output/RD4-RNA-Seq/RD4-proteins_w_no_RNASeq.rds")
+no_rnaseq <- readRDS("output/RD4-RNA-Seq/RD4-proteins_no_RNA-Seq.rds")
 
 # Cell type gene expression ratios
 protein_ratios <- readRDS("output/RD4-RNA-Seq/RD4-RNA-Seq_cell_gene_ratios.rds")

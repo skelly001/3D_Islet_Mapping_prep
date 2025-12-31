@@ -1,3 +1,20 @@
+# ==============================================================================
+# ROI Mapping and Cell Type Assignment from Immunofluorescence
+# ==============================================================================
+# Script: 1b_1-ROI_mapping_and_cell_type_assignment.R
+# Description: Processes ImageJ ROI data to create cell boundary polygons and
+#              assigns cell types (alpha, beta, acinar) based on RGB
+#              fluorescence intensity measurements. Converts ROI coordinates from 
+#              ImageJ (Fiji) cell segmentation to sf polygon objects and visualizes 
+#              cell segmentation results.
+#
+# Input: - data/1-ImageJ_cell_ROI/ROI_RGB_values/*.csv
+#        - data/1-ImageJ_cell_ROI/ROI.zip
+# Output: - output/RD1-ROI_mapping_and_cell_type_assignment/ROI_polygons_with_cell_types.RData
+#         - output/RD1-ROI_mapping_and_cell_type_assignment/segmented_cells.png
+#         - output/RD1-ROI_mapping_and_cell_type_assignment/cell_type_assignment.png
+# ==============================================================================
+
 library(RColorBrewer)
 library(RImageJROI)
 library(tidyverse)

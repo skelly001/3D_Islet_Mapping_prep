@@ -1,3 +1,18 @@
+# ==============================================================================
+# Integration of Cell ROIs with Mass Spectrometry Protein Abundance
+# ==============================================================================
+# Script: 3a_1-ROI_and_pixel_to_MS.R
+# Description: Joins segmented cell ROI data with mass spectrometry protein
+#              abundance measurements and immunofluorescence cell counts.
+#              Processes protein quantification data, handles missing values,
+#              and reverses log2 transformation for absolute abundance values.
+#
+# Input: - output/RD2-ROI_to_pixel/RD2-Slide61_cell_roi_with_pixel_annotation.RData
+#        - data/3-ROI_and_pixel_to_MS/3D_mapping_protein_abundance.xlsx
+#        - data/3-ROI_and_pixel_to_MS/3D_mapping_IF_summary.xlsx
+# Output: - output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_cell_roi_ms_absolute.rds
+# ==============================================================================
+
 library(readxl)
 library(tidyverse)
 library(sf)
@@ -6,7 +21,7 @@ library(sf)
 # Import data -------------------------------------------------------------
 
 # ROI data
-(load("output/RD2-ROI_to_pixel/RD2-Slide61_roi_w_edges_and_pixel_names.RData"))
+(load("output/RD2-ROI_to_pixel/RD2-Slide61_cell_roi_with_pixel_annotation.RData"))
 
 # Protein abundance
 prot_data <- read_excel(path = "data/3-ROI_and_pixel_to_MS/3D_mapping_protein_abundance.xlsx",
@@ -100,4 +115,4 @@ pix_to_ms[prot_cols] <- as.data.frame(pix_to_ms) %>%
     lapply(\(x){2^x})
 
 # Save
-saveRDS(pix_to_ms, file = "output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_roi_w_edges_pixels_ms_absolute.rds")
+saveRDS(pix_to_ms, file = "output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_cell_roi_ms_absolute.rds")

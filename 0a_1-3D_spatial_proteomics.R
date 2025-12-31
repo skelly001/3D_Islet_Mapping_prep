@@ -1,3 +1,25 @@
+# ==============================================================================
+# 3D Spatial Proteomics Analysis with Giotto
+# ==============================================================================
+# Script: 0a_1-3D_spatial_proteomics.R
+# Description: Performs 3D spatial proteomics analysis using the Giotto
+#              framework. Includes data preprocessing (filtering, normalization),
+#              dimensionality reduction (PCA, UMAP), Leiden clustering,
+#              differential expression analysis, spatial network construction
+#              (Delaunay triangulation), HMRF spatial domain detection, and
+#              cell proximity analysis.
+#
+# Input: - data/expression.csv
+#        - data/spatial_locs.csv
+#        - data/i6_image.png
+#        - data/cell_type_vector.RDS
+# Output: - PCA.txt
+#         - PCA_loading.txt
+#         - cluster_1K.txt
+#         - ST_scran_metagene.txt
+#         - HMRF output in save_directory
+# ==============================================================================
+
 #Library
 myPaths <- .libPaths()   # get the paths
 myPaths <- c(myPaths[2], myPaths[1])  # switch them

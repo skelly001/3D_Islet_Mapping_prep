@@ -1,3 +1,20 @@
+# ==============================================================================
+# Cell ROI to Mass Spectrometry Pixel Mapping
+# ==============================================================================
+# Script: 2b_1-ROI_to_pixel.R
+# Description: Links segmented cell ROIs to mass spectrometry acquisition pixels
+#              using 8-bit color histogram matching. Maps ImageJ cell ROIs
+#              to corresponding MS pixel ROIs for downstream spatial
+#              proteomics integration.
+#
+# Input: - output/RD1-ROI_mapping_and_cell_type_assignment/ROI_polygons_with_cell_types.RData
+#        - data/2-ROI_to_pixel/1-ImageJ_cell_ROI_to_pixel_histograms/*.txt
+#        - data/2-ROI_to_pixel/2-ImageJ_pixel_ROI_histograms/*.txt
+#        - data/2-ROI_to_pixel/Slide61_Pixel_Flu_RoiSet_IJ names_to_pixel_names.xlsx
+# Output: - output/RD2-ROI_to_pixel/RD2-Slide61_cell_roi_with_pixel_annotation.RData
+#         - output/RD2-ROI_to_pixel/Pixel Assignment.png
+# ==============================================================================
+
 library(readxl)
 library(RColorBrewer)
 library(tidyverse)
@@ -127,7 +144,7 @@ cell_to_pix  <- full_join(roi_all_sf_polygon, cell_to_pix, by = "index.sc")%>%
     relocate(cell_type, .before = cell.roi)
 
 
-save(cell_to_pix, file = "output/RD2-ROI_to_pixel/RD2-Slide61_roi_w_edges_and_pixel_names.RData")
+save(cell_to_pix, file = "output/RD2-ROI_to_pixel/RD2-Slide61_cell_roi_with_pixel_annotation.RData")
 
 
 # ROI level information
