@@ -1,6 +1,6 @@
-//This macro will measure the histogram (256 bins) of an 8-bit color image of pixels for all *segmented cell* ROIs and save the results table.
+//This will measure the histogram (256 bins) of an 8-bit color image of pixels for all *segmented cell* ROIs and save the results table.
 //Goal: Assign segmented cell ROIs to pixels based on dominant color in the ROI. All pixels have been assigned a different color.
-//Note: Color pixel image ("Slide61_mask_8bit_color.png") & segmented cell ROIs ("data/1-ImageJ_cell_ROI/ROI.zip") 
+//Note: Color pixel image ("data/2-ROI_to_pixel/Slide61_mask_8bit_color.png") & segmented cell ROIs ("data/1-ImageJ_cell_ROI/ROI.zip") 
 //must already be open in ImageJ
 
 path = "data/2-ROI_to_pixel/1-ImageJ_cell_ROI_to_pixel_histograms/"

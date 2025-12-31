@@ -1,31 +1,26 @@
-library(tidyverse)
-library(sf)
-# library(data.table)
-# library(RImageJROI)
 library(readxl)
 library(RColorBrewer)
+library(tidyverse)
+library(sf)
 
 # Import Data -------------------------------------------------------------
 
-
-# Read segmented cell (sc) ROI (8-bit color) histogram measurements *WITH EDGE ROIs*
+# Read segmented cell (sc) ROI (8-bit color) histogram measurements
 file_list_sc <- list.files(path = r"(data\2-ROI_to_pixel\1-ImageJ_cell_ROI_to_pixel_histograms)",
                         full.names = T)
-
 sc_hist <- map(file_list_sc, data.table::fread, data.table = F)
 
 
-# Read pixel ROI (8-bit color) histogram measurements
+# Read pixel (pix) ROI (8-bit color) histogram measurements
 file_list_pix <- list.files(path = r"(data\2-ROI_to_pixel\2-ImageJ_pixel_ROI_histograms)",
                         full.names = T)
-
 pix_hist <- map(file_list_pix, data.table::fread, data.table = F)
 
 
-# Read pixel ROI name to Mass Spec pixel name correlation table (manually annotated)
+# Read pixel ROI name to Mass Spec pixel name key
 pix_ms_names <- read_xlsx(path = r"(data\2-ROI_to_pixel\Slide61_Pixel_Flu_RoiSet_IJ names_to_pixel_names.xlsx)")
 
-# Load segmented cell ROIs (in correct order)
+# Load segmented cell ROIs
 (load("output/RD1-ROI_mapping_and_cell_type_assignment/ROI_polygons_with_cell_types.RData"))
 
 
@@ -47,7 +42,7 @@ for (i in 1:nrow(file_list_sc_2)) {
         mutate(index = rep(file_list_sc_2$index[[i]], 256))
 }
 
-# Single dataframe and arrange files in correct order (low to high)
+# Single dataframe and arrange files in correct order
 sc_hist <- bind_rows(sc_hist) %>% 
     group_by(index) %>% 
     arrange(index) %>% 
@@ -61,7 +56,7 @@ sc_hist <- sc_hist %>%
     ungroup() %>% 
     select(-c(Count, V1)) %>% 
     rename(index.sc = index)
-# Note: index.sc will correlate to segmented cell ROI names
+# Note: index.sc will match to segmented cell ROI names
 
 
 # Process Pixel Histogram Data --------------------------------------------
@@ -94,9 +89,9 @@ pix_hist <- pix_hist %>%
     ungroup() %>% 
     select(-c(Count, V1)) %>% 
     rename(index.pix = index)
-
-# Note: all pixels are unique by "Value". index.pix will correlate to pixel ROI names and 
+# Note: all pixels are unique by "Value". index.pix will match to pixel ROI names and 
 # pixel MS names.  
+
 
 
 # Process Pixel MS Names --------------------------------------------------
@@ -113,8 +108,8 @@ pix_ms_names <- pix_ms_names %>%
 
 # Correlate cell ROIs to pixels by "Value" (aka color bin)
 cell_to_pix <- left_join(sc_hist, pix_hist, by = "Value")
-
 # Note: Rows with NA in count.pix & index.pix columns are acinar cells
+
 
 # Add MS pixel names
 cell_to_pix <- left_join(cell_to_pix, pix_ms_names, by = "index.pix") %>% 
@@ -135,10 +130,11 @@ cell_to_pix  <- full_join(roi_all_sf_polygon, cell_to_pix, by = "index.sc")%>%
 save(cell_to_pix, file = "output/RD2-ROI_to_pixel/RD2-Slide61_roi_w_edges_and_pixel_names.RData")
 
 
+# ROI level information
 plot(cell_to_pix)
 
 
-
+## Visualize cell ROI pixel assignments -----
 pal <- brewer.pal(n = 12, name = "Paired")
 
 ggplot(cell_to_pix)+
@@ -154,10 +150,3 @@ ggplot(cell_to_pix)+
 
 ggsave("output/RD2-ROI_to_pixel/Pixel Assignment.png", 
 dpi = 300, width = 1200, height = 1100, units = "px")
-
-
-
-
-
-
-

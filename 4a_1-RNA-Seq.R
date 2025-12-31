@@ -2,22 +2,17 @@ library(tidyverse)
 library(sf)
 library(Seurat)
 
-# Note: counts[, 1:50] is used only for quick prototyping. Not used for final product (lines 50/91)
+
 # Import Data -------------------------------------------------------------
 
 
-# MS data
-(load("output/RD3-ROI_and_pixel_to_MS/RD3_1-Slide61_roi_w_edges_pixels_ms_absolute.RData"))
-ms_abs <- old
-rm(old)
+# ROI with Protein abundance
+ms_abs <- readRDS("output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_roi_w_edges_pixels_ms_absolute.rds")
 
 # RNA-Seq reference data
-fullref <- readRDS(r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\azimuth-references\human_pancreas_snakemake\seurat_objects\fullref.Rds)")
+fullref <- readRDS("azimuth-references/human_pancreas_snakemake/seurat_objects/fullref.Rds")
 
-# Uniprot accession to gene correlation
-# uniprot <- read.delim("../../../../Uniprot Downloads/Human_sp_tr_primary_gene_name_20220531.tab",
-#                       sep = "\t")
-
+# Uniprot accession to gene key
 uniprot <- data.table::fread(file = "data/uniprotkb_Human_2023_10_25.tsv.gz", 
                              data.table = F,
                              stringsAsFactors = F,
@@ -35,9 +30,12 @@ meta <- fullref@meta.data %>%
     select(c(cell, celltype)) %>% 
     `rownames<-`(NULL)
 
-# filter RNA-Seq (counts) ref data for entries in MS data
+# filter RNA-Seq (counts) genes for those observed in MS data
+anno_cols <- c("pixel", "cell_type", "cell.roi", "geometry", 
+"acinar_cell_count", "alpha_cell_count", "beta_cell_count") 
+
 ms_proteins <- as.data.frame(ms_abs) %>% 
-    select(-c(pixel:alpha_cell_count)) %>% 
+    select(!all_of(anno_cols)) %>% 
     colnames()
 
 ## Prep uniprot gene names (some RNASeq entries using alternate gene names)
@@ -49,7 +47,7 @@ uniprot_sp_pirimary <- uniprot %>%
                           delim = "; ")
 
 ## first match, using primary gene name
-sct_counts1 <- as.matrix(fullref@assays[["SCT"]]@counts) %>% #  fullref@assays[["SCT"]]@counts[, 1:50]
+sct_counts1 <- as.matrix(fullref@assays[["SCT"]]@counts) %>%
     as.data.frame() %>%
     mutate(gene = rownames(.)) %>%
     `rownames<-`(NULL) %>% 
@@ -83,14 +81,13 @@ uniprot_sp_alt <- uniprot %>%
                           delim = "; ") %>%
     separate_longer_delim(cols = alt_gene_name,
                           delim = " ") %>% 
-    # filter(alt_gene_name != Gene.Names..primary.) %>% #these names have already failed to match but will leave them so they end up in sct_counts2_remain, for convinience
     select(-Gene.Names..primary.) %>% 
     distinct(Entry, alt_gene_name) %>% 
     mutate(alt_gene_name = sub(";", "", alt_gene_name))
 
 
 ## second match, using only unmatched accession & alt. gene names
-sct_counts2 <- as.matrix(fullref@assays[["SCT"]]@counts) %>% #  fullref@assays[["SCT"]]@counts[, 1:50]
+sct_counts2 <- as.matrix(fullref@assays[["SCT"]]@counts) %>%
     as.data.frame() %>%
     mutate(gene = rownames(.)) %>%
     `rownames<-`(NULL) %>% 
@@ -111,7 +108,8 @@ sct_counts2_remain <-  sct_counts2 %>%
     select(Entry, gene)
 
 # save
-save(sct_counts2_remain, file = "output/RD4-RNA-Seq/RD4-Proteins_w_no_RNASeq.RData")
+saveRDS(sct_counts2_remain, file = "output/RD4-RNA-Seq/RD4-proteins_w_no_RNASeq.rds")
+# save(sct_counts2_remain, file = "output/RD4-RNA-Seq/RD4-proteins_w_no_RNASeq.RData")
 
 
 
@@ -143,12 +141,6 @@ protein_distributions <- sct_counts_meta %>%
     ungroup() %>% 
     filter(celltype %in% c("acinar", "alpha", "beta"))
 
-# sct_counts_meta %>% 
-#     group_by(celltype) %>%
-#     summarise(across(everything(), sum)) %>%
-#     ungroup() %>%
-#     write_rds(file = "RD4_3-RNA-Seq_counts_all_cell_types.rds")
-
 RNA_Seq_NA_proteins <-  protein_distributions[, colSums(is.na(protein_distributions)) != 0] %>% 
     t() %>% 
     as.data.frame() %>% 
@@ -157,7 +149,6 @@ RNA_Seq_NA_proteins <-  protein_distributions[, colSums(is.na(protein_distributi
     rename(missing_proteins = rowname)
 
 protein_distributions <-  protein_distributions[, colSums(is.na(protein_distributions)) == 0]
-# NOTE: after removing missing RNA-Seq data, we are left with 1514 proteins (originally 1560 proteins)
 
 protein_ratios <- protein_distributions %>% 
     mutate(across(where(~ !is.character(.x) && sum(.x) != 0), \(x){x / sum(x)}))
@@ -174,67 +165,4 @@ prot_acinar <- protein_ratios %>%
 
 
 # Save
-save(protein_ratios, file = "output/RD4-RNA-Seq/RD4-RNA-Seq_cell_protein_ratios.RData")
-
-
-
-
-
-# Covariation between cell number per pixel & protein intensity
-# NOTE: I do not think this will work because we do not have reliable cell count data
-# ms_abs <- ms_abs[!is.na(ms_abs$pixel), ]
-
-# cell_summ <- as.data.frame(ms_abs) %>% 
-#     group_by(pixel, cell_type) %>% 
-#     tally() %>% 
-#     rename(cell_count = n)
-#  
-# cor <- as.data.frame(ms_abs) %>% 
-#     select(-c(cell.roi, geometry)) %>% 
-#     select(-contains("cell_count")) %>% 
-#     filter(!is.na(pixel))
-
-# cor <- full_join(cor, cell_summ, by = c("pixel", "cell_type")) %>% 
-#     relocate(cell_count, .after = cell_type)
-
-
-
-
-
-
-
-
-
-# # missing proteins --------------------------------------------------------
-
-# main <- readxl::read_xlsx(path = r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Data\MS_output\processed\3D_mapping_no_imputation.xlsx)",
-#                           sheet = "noinputation_combined_r")
-
-# subset <- readxl::read_xlsx(path = r"(C:\Users\kell343\OneDrive - PNNL\Documents\11 HuBMAP\Protein_Data\MS_output\processed\3D_mapping.xlsx)",
-#                           sheet = "log_inpu_r")
-
-
-
-# main <- main %>% 
-#     select(PROTID) %>% 
-#     mutate(PROTID = sub("sp\\|(.*?)\\|.*", "\\1", PROTID))
-
-# subset <- subset %>% 
-#     select(PROTID)
-
-# # proteins in subset w/o match in main (23) 
-# missing <- anti_join(subset, main)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+saveRDS(protein_ratios, file = "output/RD4-RNA-Seq/RD4-RNA-Seq_cell_gene_ratios.rds")
