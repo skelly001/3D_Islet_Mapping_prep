@@ -177,6 +177,42 @@ section { padding: var(--section-gap) 0; }
 @media (max-width: 900px) {
   .slider-row { grid-template-columns: 1fr; }
 }
+/* --- Opacity slider variant --- */
+.opacity-compare {
+  position: relative; width: 100%; aspect-ratio: 1/1;
+  overflow: hidden; border-radius: 6px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.4); border: 1px solid var(--border-subtle);
+}
+.opacity-compare img {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  object-fit: cover; pointer-events: none;
+}
+.opacity-compare .img-overlay {
+  opacity: var(--overlay-opacity, 0);
+}
+.opacity-control {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.7rem 0; justify-content: center;
+}
+.opacity-label {
+  font-size: 0.78rem; color: var(--text-dim); white-space: nowrap;
+}
+.opacity-range {
+  -webkit-appearance: none; appearance: none;
+  width: 200px; height: 4px; border-radius: 2px;
+  background: var(--border-subtle); outline: none; cursor: pointer;
+}
+.opacity-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent-cyan); border: 2px solid #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.4); cursor: pointer;
+}
+.opacity-range::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent-cyan); border: 2px solid #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.4); cursor: pointer;
+}
 /* ========== SECTION 4: PIPELINE ========== */
 .pipeline-track {
   display: flex; gap: 0; align-items: stretch; overflow-x: auto;
@@ -404,14 +440,14 @@ footer .links a { margin: 0 0.8rem; }
 
       <div class="slider-wrapper reveal">
         <div class="slider-title">Cell Boundary Overlay vs. ROI Color Mask</div>
-        <div class="slider-compare" data-slider>
-          <img class="img-before" src="website/converted/cell_boundaries_overlay.jpg" alt="Cell boundaries segmentation overlay" loading="lazy">
-          <img class="img-after" src="website/converted/Slide61_mask_8bit_color.jpg" alt="8-bit color ROI mask" loading="lazy">
-          <div class="slider-handle"></div>
+        <div class="opacity-compare" data-opacity-slider>
+          <img class="img-base" src="website/converted/cell_boundaries_overlay.jpg" alt="Cell boundaries segmentation overlay" loading="lazy">
+          <img class="img-overlay" src="website/converted/Slide61_mask_8bit_color.jpg" alt="8-bit color ROI mask" loading="lazy">
         </div>
-        <div class="slider-labels">
-          <span>Cell Boundary Segmentation</span>
-          <span>ROI Color Mask</span>
+        <div class="opacity-control">
+          <span class="opacity-label">Cell Boundaries</span>
+          <input type="range" min="0" max="100" value="0" class="opacity-range">
+          <span class="opacity-label">ROI Color Mask</span>
         </div>
       </div>
 
@@ -715,6 +751,14 @@ document.querySelectorAll('[data-slider]').forEach(slider => {
   slider.addEventListener('pointercancel', () => { active = false; });
   // Initialize at 50%
   slider.style.setProperty('--split', '50%');
+});
+
+/* --- OPACITY SLIDER --- */
+document.querySelectorAll('[data-opacity-slider]').forEach(container => {
+  const range = container.closest('.slider-wrapper').querySelector('.opacity-range');
+  range.addEventListener('input', () => {
+    container.style.setProperty('--overlay-opacity', range.value / 100);
+  });
 });
 
 /* --- SCROLL REVEAL --- */
