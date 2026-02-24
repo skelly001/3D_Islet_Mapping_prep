@@ -74,6 +74,13 @@ azimuth-references/*/*/*
 !azimuth-references/**/config.json
 !azimuth-references/**/Snakefile
 
+# IDE settings
+.vscode/
+
+# HTML widget dependencies and generated HTML output
+output/RD0-3D_spatial_proteomics/spat3D_files/
+output/RD0-3D_spatial_proteomics/spat3D.html
+
 # large files
 data/uniprotkb_Human_2023_10_25.tsv.gz
 data/Human_sp_tr_primary_gene_name_20220531.tab
