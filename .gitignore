@@ -55,7 +55,6 @@ rsconnect/
 *.tif
 *.tiff
 *.txt
-*.png
 !data/2-ROI_to_pixel/*.png
 *.xlsx
 *.RData
