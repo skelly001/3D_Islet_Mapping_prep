@@ -11,8 +11,9 @@ out_dir <- "website/converted"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Shared dimensions and theme (no legend, no axes, no margins)
-W <- 1100
-H <- 1100
+# Use large canvas so ggplot renders crisp polygons
+W <- 3000
+H <- 3000
 DPI <- 300
 
 shared_theme <- theme(
