@@ -49,73 +49,71 @@ dir.create("output/RD5-final_protein_maps")
 ## Apply gene expression ratios to protein abundance -----
 
 # Annotation columns
-anno_cols <- c("pixel", "cell_type", "cell.roi", "geometry", 
-"acinar_cell_count", "alpha_cell_count", "beta_cell_count") 
+anno_cols <- c("pixel", "cell_type", "cell.roi", "geometry",
+"acinar_cell_count", "alpha_cell_count", "beta_cell_count")
 
 # Observed proteins without RNASeq data
 c1 <- colnames(pix_to_ms)
 c2 <- colnames(protein_ratios)
-missing_rnax <- anti_join(data.frame(uniprot=c1), data.frame(uniprot=c2)) %>% 
-    filter(!uniprot %in% anno_cols) %>% 
-    left_join(gene_name, by = c("uniprot" = "Entry")) %>% 
+missing_rnax <- anti_join(data.frame(uniprot=c1), data.frame(uniprot=c2)) %>%
+    filter(!uniprot %in% anno_cols) %>%
+    left_join(gene_name, by = c("uniprot" = "Entry")) %>%
     select(-Status)
 
-# Create a lookup matrix from protein_ratios indexed by celltype
+# Build ratio lookup matrix (celltype x protein)
 ratio_matrix <- protein_ratios %>%
 	column_to_rownames("celltype") %>%
 	as.matrix()
 
 protein_cols <- colnames(ratio_matrix)
 
-# Get the ratio for each row based on its cell_type
+# Apply cell type ratios to protein abundances
 cell_types <- pix_to_ms$cell_type
 ratio_lookup <- ratio_matrix[cell_types, protein_cols, drop = FALSE]
-
-# Extract protein data as matrix, multiply element-wise, put back
 protein_data <- as.matrix(st_drop_geometry(pix_to_ms)[, protein_cols])
 pix_to_ms[, protein_cols] <- protein_data * ratio_lookup
 
 
 
 ## Calculate relative abundance -----
-pix_to_ms <- mutate(pix_to_ms, slide = str_extract(pixel, "^x\\d{2}")) %>% 
+pix_to_ms <- mutate(pix_to_ms, slide = str_extract(pixel, "^x\\d{2}")) %>%
     relocate(slide, .before = colnames(.)[1])
 
-na <- pix_to_ms %>% 
+na <- pix_to_ms %>%
     filter(is.na(slide))
 
-not_na <- pix_to_ms %>% 
+not_na <- pix_to_ms %>%
     filter(!is.na(slide))
 
 anno_cols_ext <- c("slide", anno_cols)
 
-not_na_relative <- not_na %>% 
-    group_by(slide) %>% 
+# Normalize within each slide
+not_na_relative <- not_na %>%
+    group_by(slide) %>%
     mutate(across(!matches(anno_cols_ext), \(x) {x / max(x, na.rm = T)})) %>%
     ungroup()
 
 pix_to_ms <- bind_rows(not_na_relative, na)
 
-# Check missingness
+# Assess missingness
 as.data.frame(pix_to_ms) %>%
-    select(!all_of(anno_cols_ext)) %>% 
-    summarise(across(everything(), \(x) {mean(is.na(x))})) %>% 
-    as.numeric(.[1,]) %>% 
+    select(!all_of(anno_cols_ext)) %>%
+    summarise(across(everything(), \(x) {mean(is.na(x))})) %>%
+    as.numeric(.[1,]) %>%
     hist(100)
 
-# get proteins with 100% missingness created by relative abundance transformation
-to_remove <- as.data.frame(pix_to_ms) %>% 
-    select(!all_of(anno_cols_ext)) %>% 
-    summarise(across(everything(), \(x) {mean(is.na(x)) == 1})) %>% 
+# Identify proteins with 100% missingness
+to_remove <- as.data.frame(pix_to_ms) %>%
+    select(!all_of(anno_cols_ext)) %>%
+    summarise(across(everything(), \(x) {mean(is.na(x)) == 1})) %>%
     select(which(as.logical(as.vector(.[1,])) == TRUE))
 
-# Remove proteins with no data
-pix_to_ms <- pix_to_ms %>% 
+pix_to_ms <- pix_to_ms %>%
     select(!colnames(to_remove))
 
 
 
-## Visualize islet/acinar protein marker abundance -----
+## QC: Visualize marker protein abundance -----
 low <- "midnightblue"
 high <- "yellow"
 
@@ -131,83 +129,81 @@ plot_protein_map <- \(data, protein_col, title) {
               legend.position = "none")
 }
 
-# Islet Markers
+# Islet markers (GCG, INS, SCG2)
 GCG <- plot_protein_map(pix_to_ms, "P01275", "Glucagon")
 INS <- plot_protein_map(pix_to_ms, "P01308", "Insulin")
 SCG2 <- plot_protein_map(pix_to_ms, "P13521", "Secretogranin-2")
 
 grob_islet <- grid.arrange(SCG2, INS, GCG, nrow = 1)
-ggsave(filename = "output/RD5-final_protein_maps/islet_protein_markers.png", 
+ggsave(filename = "output/RD5-final_protein_maps/islet_protein_markers.png",
        plot = grob_islet, width = 2315, height = 947, units = "px")
 
-# Acinar Markers
+# Acinar markers (REG1A, REG1B, CPA1)
 REG1A <- plot_protein_map(pix_to_ms, "P05451", "Lithostathine-1-alpha")
 REG1B <- plot_protein_map(pix_to_ms, "P48304", "Lithostathine-1-beta")
 CPA1 <- plot_protein_map(pix_to_ms, "P15085", "Carboxypeptidase A1")
 
 grob_acinar <- grid.arrange(REG1A, REG1B, CPA1, nrow = 1)
-ggsave(filename = "output/RD5-final_protein_maps/acinar_protein_markers.png", 
+ggsave(filename = "output/RD5-final_protein_maps/acinar_protein_markers.png",
        plot = grob_acinar, width = 2315, height = 947, units = "px")
 
 
 
 # Save all protein maps ----
 
-# get gene names
-uniprotID <- pix_to_ms %>% 
-    as.data.frame() %>% 
-    filter(slide == "x60") %>% 
+# Get proteins with data in slide 60
+uniprotID <- pix_to_ms %>%
+    as.data.frame() %>%
+    filter(slide == "x60") %>%
     select(!all_of(anno_cols_ext))
 
 uniprotID <- uniprotID[, !is.na(colMeans(uniprotID, na.rm=T))]
 
 uniprotID <- uniprotID %>%
-    colnames() %>% 
-    as.data.frame() %>% 
+    colnames() %>%
+    as.data.frame() %>%
     rename(uniprot = colnames(.)[[1]])
 
-gene_name <- gene_name %>% 
+gene_name <- gene_name %>%
     filter(grepl("HUMAN", `Entry name`))
 
-# join and spot fix missing gene name/uniprot accession
-protein_names <- left_join(uniprotID, gene_name, by = c("uniprot" = "Entry")) %>% 
+# Map UniProt to gene names
+protein_names <- left_join(uniprotID, gene_name, by = c("uniprot" = "Entry")) %>%
     mutate(`Gene names  (primary )` = if_else(is.na(`Gene names  (primary )`),
                                             uniprot,
-                                            `Gene names  (primary )`)) %>% 
+                                            `Gene names  (primary )`)) %>%
     mutate(`Gene names  (primary )` = sub("(^.*?);.*", "\\1", `Gene names  (primary )`))
 
-
-# Compute protein missingness
+# Calculate per-protein missingness
 calc_missing <- \(x) {
-    select_prot <- pix_to_ms[, c(x, "pixel")] %>% 
+    select_prot <- pix_to_ms[, c(x, "pixel")] %>%
     filter(!is.na(pixel))
-    
+
     missingness <- mean(is.na(select_prot[[x]]))
     return(missingness)
 }
 
 calc_missing_v <- Vectorize(calc_missing)
 
-# Remove proteins with no RNASeq data
-protein_names <- protein_names %>% 
-    select(uniprot, `Gene names  (primary )`) %>% 
-    filter(!.$uniprot %in% no_rnaseq$Entry) %>% 
-	filter(!duplicated(.$`Gene names  (primary )`)) %>% 
+# Filter to proteins with RNA-Seq data and unique gene names
+protein_names <- protein_names %>%
+    select(uniprot, `Gene names  (primary )`) %>%
+    filter(!.$uniprot %in% no_rnaseq$Entry) %>%
+	filter(!duplicated(.$`Gene names  (primary )`)) %>%
     mutate(missingness = calc_missing_v(uniprot))
 
+## Export protein maps -----
 
-## write maps to png -----
-
-# Apply missingness filter (<50%)
+# Keep proteins with <50% missingness
 missing_threshold <- 0.5
-plots_to_save <- protein_names %>% 
-	filter(missingness < missing_threshold)  
+plots_to_save <- protein_names %>%
+	filter(missingness < missing_threshold)
 
 dir.create("output/RD5-final_protein_maps/final_protein_maps")
 
 # Helper function for saving protein maps
 save_plots <- \(x, y) {
-	
+
 	pix_to_ms_floop <- pix_to_ms[, c(x, "geometry")]
 
 	p <- ggplot(pix_to_ms_floop)+
@@ -221,19 +217,19 @@ save_plots <- \(x, y) {
 				axis.text.y=element_blank(),
 				axis.ticks.y=element_blank(),
 				plot.title = element_text(size = 20))
-	
+
 	png(filename = str_glue("output/RD5-final_protein_maps/final_protein_maps/{y}_{x}.png"),
 		width = 1570,
 		height = 1100,
 		res = 300)
-	plot(p)  
+	plot(p)
 	dev.off()
 
 }
 
 # Save maps
-future_walk2(.x = plots_to_save$uniprot, 
+future_walk2(.x = plots_to_save$uniprot,
 		.y = plots_to_save$`Gene names  (primary )`,
-		.f = save_plots, 
+		.f = save_plots,
 		.progress = TRUE,
 		.options = furrr_options(seed = NULL))

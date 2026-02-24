@@ -22,19 +22,17 @@ library(sf)
 
 # Import Data -------------------------------------------------------------
 
-# Read segmented cell (sc) ROI (8-bit color) histogram measurements
+# Segmented cell ROI histograms (8-bit color)
 file_list_sc <- list.files(path = r"(data\2-ROI_to_pixel\1-ImageJ_cell_ROI_to_pixel_histograms)",
                         full.names = T)
 sc_hist <- map(file_list_sc, data.table::fread, data.table = F)
 
-
-# Read pixel (pix) ROI (8-bit color) histogram measurements
+# Pixel ROI histograms (8-bit color)
 file_list_pix <- list.files(path = r"(data\2-ROI_to_pixel\2-ImageJ_pixel_ROI_histograms)",
                         full.names = T)
 pix_hist <- map(file_list_pix, data.table::fread, data.table = F)
 
-
-# Read pixel ROI name to Mass Spec pixel name key
+# Pixel ROI to MS pixel name key
 pix_ms_names <- read_xlsx(path = r"(data\2-ROI_to_pixel\Slide61_Pixel_Flu_RoiSet_IJ names_to_pixel_names.xlsx)")
 
 # Load segmented cell ROIs
@@ -45,7 +43,7 @@ pix_ms_names <- read_xlsx(path = r"(data\2-ROI_to_pixel\Slide61_Pixel_Flu_RoiSet
 
 dir.create("output/RD2-ROI_to_pixel")
 
-# Extract file order from file name
+# Parse file indices from filenames
 file_list_sc_2 <- file_list_sc %>% 
     as.data.frame() %>% 
     mutate(index = str_extract(`.`, "[[:digit:]]{1,4}.txt")) %>% 
@@ -53,59 +51,58 @@ file_list_sc_2 <- file_list_sc %>%
     select(index) %>% 
     map_df(as.integer)
 
-# Add file order column to each file
+# Add index to each histogram
 for (i in 1:nrow(file_list_sc_2)) {
-    sc_hist[[i]] <- sc_hist[[i]] %>% 
+    sc_hist[[i]] <- sc_hist[[i]] %>%
         mutate(index = rep(file_list_sc_2$index[[i]], 256))
 }
 
-# Single dataframe and arrange files in correct order
-sc_hist <- bind_rows(sc_hist) %>% 
-    group_by(index) %>% 
-    arrange(index) %>% 
+# Combine and sort
+sc_hist <- bind_rows(sc_hist) %>%
+    group_by(index) %>%
+    arrange(index) %>%
     ungroup()
 
 # Assign ROI to dominant color bin
-sc_hist <- sc_hist %>% 
-    group_by(index) %>% 
-    filter(Count > 0) %>% 
-    filter(Count == max(Count)) %>% 
-    ungroup() %>% 
-    select(-c(Count, V1)) %>% 
+sc_hist <- sc_hist %>%
+    group_by(index) %>%
+    filter(Count > 0) %>%
+    filter(Count == max(Count)) %>%
+    ungroup() %>%
+    select(-c(Count, V1)) %>%
     rename(index.sc = index)
 # Note: index.sc will match to segmented cell ROI names
 
 
 # Process Pixel Histogram Data --------------------------------------------
 
-
-# Extract file order from file name
-file_list_pix_2 <- file_list_pix %>% 
-    as.data.frame() %>% 
-    mutate(index = str_extract(`.`, "[[:digit:]]{1,2}.txt")) %>% 
-    mutate(index = sub(".txt", "", index)) %>% 
-    select(index) %>% 
+# Parse file indices from filenames
+file_list_pix_2 <- file_list_pix %>%
+    as.data.frame() %>%
+    mutate(index = str_extract(`.`, "[[:digit:]]{1,2}.txt")) %>%
+    mutate(index = sub(".txt", "", index)) %>%
+    select(index) %>%
     map_df(as.integer)
 
-# Add file order column to each file
+# Add index to each histogram
 for (i in 1:nrow(file_list_pix_2)) {
-    pix_hist[[i]] <- pix_hist[[i]] %>% 
+    pix_hist[[i]] <- pix_hist[[i]] %>%
         mutate(index = rep(file_list_pix_2$index[[i]], 256))
 }
 
-# Single dataframe and arrange files in correct order (low to high)
-pix_hist <- bind_rows(pix_hist) %>% 
-    group_by(index) %>% 
-    arrange(index) %>% 
+# Combine and sort
+pix_hist <- bind_rows(pix_hist) %>%
+    group_by(index) %>%
+    arrange(index) %>%
     ungroup()
 
 # Assign ROI to dominant color bin
-pix_hist <- pix_hist %>% 
-    group_by(index) %>% 
-    filter(Count > 0) %>% 
-    ungroup() %>% 
-    select(-c(Count, V1)) %>% 
-    rename(index.pix = index)
+pix_hist <- pix_hist %>%
+    group_by(index) %>%
+    filter(Count > 0) %>%
+    ungroup() %>%
+    select(-c(Count, V1)) %>%
+    rename(index.pix = index)  
 # Note: all pixels are unique by "Value". index.pix will match to pixel ROI names and 
 # pixel MS names.  
 
@@ -113,41 +110,36 @@ pix_hist <- pix_hist %>%
 
 # Process Pixel MS Names --------------------------------------------------
 
-
-pix_ms_names <- pix_ms_names %>% 
-    select(-c(Name, Row, Col)) %>% 
+pix_ms_names <- pix_ms_names %>%
+    select(-c(Name, Row, Col)) %>%
     rename(index.pix = Index,
            pix.MS.name = MS.pixel.name)
 
 
 # Link Cell ROIs to Pixels ------------------------------------------------
 
-
-# Correlate cell ROIs to pixels by "Value" (aka color bin)
+# Match cells to pixels by color bin (NAs in count.pix & index.pix columns are acinar cells)
 cell_to_pix <- left_join(sc_hist, pix_hist, by = "Value")
-# Note: Rows with NA in count.pix & index.pix columns are acinar cells
-
 
 # Add MS pixel names
-cell_to_pix <- left_join(cell_to_pix, pix_ms_names, by = "index.pix") %>% 
+cell_to_pix <- left_join(cell_to_pix, pix_ms_names, by = "index.pix") %>%
     select(-index.pix)
 
-# Make key for segmented cell ROIs
-roi_all_sf_polygon <- roi_all_sf_polygon %>% 
-    mutate(index.sc = 0:(nrow(roi_all_sf_polygon)-1)) %>% 
+# Create index key for cell ROIs
+roi_all_sf_polygon <- roi_all_sf_polygon %>%
+    mutate(index.sc = 0:(nrow(roi_all_sf_polygon)-1)) %>%
     rename(cell.roi = roi)
 
-# Correlate segmented cell ROIs with pixels
-cell_to_pix  <- full_join(roi_all_sf_polygon, cell_to_pix, by = "index.sc")%>% 
-        select(-c(index.sc, Value)) %>% 
-    relocate(pix.MS.name, .before = cell.roi) %>% 
+# Join cell ROIs with pixel assignments
+cell_to_pix  <- full_join(roi_all_sf_polygon, cell_to_pix, by = "index.sc")%>%
+        select(-c(index.sc, Value)) %>%
+    relocate(pix.MS.name, .before = cell.roi) %>%
     relocate(cell_type, .before = cell.roi)
-
 
 save(cell_to_pix, file = "output/RD2-ROI_to_pixel/RD2-Slide61_cell_roi_with_pixel_annotation.RData")
 
 
-# ROI level information
+# ROI level plot
 plot(cell_to_pix)
 
 

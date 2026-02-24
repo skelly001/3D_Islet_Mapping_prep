@@ -44,22 +44,22 @@ acinar_cell_count <- read_excel(path = "data/3-ROI_and_pixel_to_MS/3D_mapping_IF
 
 dir.create("output/RD3-ROI_and_pixel_to_MS")
 
-# Get accession num
-prot_data <- prot_data %>% 
-    mutate(PROTID = sub(".*?\\|(.*?)\\|.*", "\\1", PROTID)) %>% 
+# Extract UniProt accession from PROTID
+prot_data <- prot_data %>%
+    mutate(PROTID = sub(".*?\\|(.*?)\\|.*", "\\1", PROTID)) %>%
     as.data.frame()
-    
 
-prot_data_2 <- prot_data %>% 
-    `rownames<-`(., .$PROTID) %>% 
-    t() %>% 
-    as.data.frame() %>% 
-    .[-c(1:2), ] %>% 
+# Transpose to pixels x proteins format
+prot_data_2 <- prot_data %>%
+    `rownames<-`(., .$PROTID) %>%
+    t() %>%
+    as.data.frame() %>%
+    .[-c(1:2), ] %>%
     mutate(pixel = rownames(.),
-           .before = colnames(.[1])) %>% 
+           .before = colnames(.[1])) %>%
     `rownames<-`(., NULL)
 
-# These pixels have poor protein coverage.
+# Exclude pixels with poor protein coverage
 bad_pixels <- c("x60E4", "x68A4", "x72A11")
 
 transform_counts <- function(df, col_name) {
@@ -70,6 +70,7 @@ transform_counts <- function(df, col_name) {
         filter(!pixel %in% bad_pixels)
 }
 
+# Reshape and merge cell count data
 cell_counts <- list(
     transform_counts(alpha_cell_count, "alpha_cell_count"),
     transform_counts(beta_cell_count, "beta_cell_count"),
@@ -79,39 +80,37 @@ cell_counts <- list(
 prot_data_2 <- reduce(cell_counts, inner_join, by = "pixel", .init = prot_data_2)
 
 
-
 # Link MS Data to Cell ROI by Pixel ---------------------------------------
-cell_to_pix <- cell_to_pix %>% 
+
+cell_to_pix <- cell_to_pix %>%
     rename(pixel = pix.MS.name)
 
 # Annotation columns
-anno_cols <- c("pixel", "cell_type", "cell.roi", "geometry", 
-"acinar_cell_count", "alpha_cell_count", "beta_cell_count") 
+anno_cols <- c("pixel", "cell_type", "cell.roi", "geometry",
+"acinar_cell_count", "alpha_cell_count", "beta_cell_count")
 
-
-pix_to_ms <- full_join(cell_to_pix, prot_data_2, by = "pixel") %>% 
+pix_to_ms <- full_join(cell_to_pix, prot_data_2, by = "pixel") %>%
     mutate_at(.vars = vars(!all_of(anno_cols)), .funs = as.double)
 
-# Only slide 60
+# Keep only slide 60 cells
 pix_to_ms <- pix_to_ms %>%
     filter(!is.na(cell.roi))
 
-# Check missingness
+# Assess protein missingness
 missingness <- as.data.frame(pix_to_ms) %>%
-    select(!all_of(anno_cols)) %>% 
+    select(!all_of(anno_cols)) %>%
     summarise(across(everything(), \(x) {mean(is.na(x))}))
 
 hist(as.numeric(missingness[1,]), 100)
 
-# remove proteins w/ no slide 60 observations
-pix_to_ms <- pix_to_ms %>% 
+# Remove proteins with 100% missingness
+pix_to_ms <- pix_to_ms %>%
     select(all_of(anno_cols), where(\(x){mean(is.na(x)) < 1}))
 
-
-# Undo log2 transform
+# Convert from log2 to absolute abundance
 prot_cols <- setdiff(colnames(pix_to_ms), anno_cols)
-pix_to_ms[prot_cols] <- as.data.frame(pix_to_ms) %>% 
-    select(all_of(prot_cols)) %>% 
+pix_to_ms[prot_cols] <- as.data.frame(pix_to_ms) %>%
+    select(all_of(prot_cols)) %>%
     lapply(\(x){2^x})
 
 # Save

@@ -29,7 +29,7 @@ ms_abs <- readRDS("output/RD3-ROI_and_pixel_to_MS/RD3-Slide61_cell_roi_ms_absolu
 # RNA-Seq reference data
 fullref <- readRDS("azimuth-references/human_pancreas_snakemake/seurat_objects/fullref.Rds")
 
-# Uniprot accession to gene key
+# Uniprot accession to gene name key
 uniprot <- data.table::fread(file = "data/uniprotkb_Human_2023_10_25.tsv.gz", 
                              data.table = F,
                              stringsAsFactors = F,
@@ -41,21 +41,22 @@ uniprot <- data.table::fread(file = "data/uniprotkb_Human_2023_10_25.tsv.gz",
 
 dir.create("output/RD4-RNA-Seq")
 
-# RNA-Seq meta data
-meta <- fullref@meta.data %>% 
-    mutate(cell = rownames(.)) %>% 
-    select(c(cell, celltype)) %>% 
+# Extract RNA-Seq cell type metadata
+meta <- fullref@meta.data %>%
+    mutate(cell = rownames(.)) %>%
+    select(c(cell, celltype)) %>%
     `rownames<-`(NULL)
 
-# filter RNA-Seq (counts) genes for those observed in MS data
-anno_cols <- c("pixel", "cell_type", "cell.roi", "geometry", 
-"acinar_cell_count", "alpha_cell_count", "beta_cell_count") 
+# Get MS protein accessions
+anno_cols <- c("pixel", "cell_type", "cell.roi", "geometry",
+"acinar_cell_count", "alpha_cell_count", "beta_cell_count")
 
-ms_proteins <- as.data.frame(ms_abs) %>% 
-    select(!all_of(anno_cols)) %>% 
+ms_proteins <- as.data.frame(ms_abs) %>%
+    select(!all_of(anno_cols)) %>%
     colnames()
 
-## Prep uniprot gene names (some RNASeq entries using alternate gene names)
+# Match proteins to RNA-Seq using primary gene names and
+# filter RNA-Seq (counts) genes for those observed in MS data
 uniprot_sp_pirimary <- uniprot %>% 
     filter(Reviewed == "reviewed") %>% 
     select(Entry, Gene.Names..primary.) %>% 
@@ -63,7 +64,7 @@ uniprot_sp_pirimary <- uniprot %>%
     separate_longer_delim(cols = Gene.Names..primary.,
                           delim = "; ")
 
-## first match, using primary gene name
+## First match, using primary gene name
 sct_counts1 <- as.matrix(fullref@assays[["SCT"]]@counts) %>%
     as.data.frame() %>%
     mutate(gene = rownames(.)) %>%
@@ -71,20 +72,20 @@ sct_counts1 <- as.matrix(fullref@assays[["SCT"]]@counts) %>%
     right_join(uniprot_sp_pirimary, by = c("gene" = "Gene.Names..primary.")) %>% 
     relocate(c(Entry, gene), .before = colnames(.)[1]) %>% 
     mutate(missing = if_else(is.na(rowSums(.[-c(1:2)])), TRUE, FALSE), .after = gene) %>% 
-    arrange(missing) %>% 
+    arrange(missing) %>%
     distinct(Entry, .keep_all = T)
 
-### successful matches
-sct_counts1_success <- sct_counts1 %>% 
-    filter(missing == FALSE) %>% 
+### Successful matches
+sct_counts1_success <- sct_counts1 %>%
+    filter(missing == FALSE) %>%
     select(-missing)
 
-### no match after using primary gene name
-sct_counts1_remain <-  sct_counts1 %>% 
-    filter(missing == TRUE) %>% 
+### No match after using primary gene name
+sct_counts1_remain <-  sct_counts1 %>%
+    filter(missing == TRUE) %>%
     select(Entry)
 
-## prep uniprot gene names for alt. name matching
+## Prepare UniProt gene names for alt. name matching
 uniprot_sp_alt <- uniprot %>% 
     filter(Reviewed == "reviewed") %>% 
     select(-c(Reviewed, Entry.Name, Protein.names, Organism, Length)) %>% 
@@ -99,11 +100,11 @@ uniprot_sp_alt <- uniprot %>%
     separate_longer_delim(cols = alt_gene_name,
                           delim = " ") %>% 
     select(-Gene.Names..primary.) %>% 
-    distinct(Entry, alt_gene_name) %>% 
+    distinct(Entry, alt_gene_name) %>%
     mutate(alt_gene_name = sub(";", "", alt_gene_name))
 
 
-## second match, using only unmatched accession & alt. gene names
+## Second match, using only unmatched accession & alt. gene names
 sct_counts2 <- as.matrix(fullref@assays[["SCT"]]@counts) %>%
     as.data.frame() %>%
     mutate(gene = rownames(.)) %>%
@@ -111,32 +112,29 @@ sct_counts2 <- as.matrix(fullref@assays[["SCT"]]@counts) %>%
     right_join(uniprot_sp_alt, by = c("gene" = "alt_gene_name")) %>% 
     relocate(c(Entry, gene), .before = colnames(.)[1]) %>% 
     mutate(missing = if_else(is.na(rowSums(.[-c(1:2)])), TRUE, FALSE), .after = gene) %>% 
-    arrange(missing) %>% 
+    arrange(missing) %>%
     distinct(Entry, .keep_all = T)
 
-### successful matches
-sct_counts2_success <- sct_counts2 %>% 
-    filter(missing == FALSE) %>% 
+### Successful matches
+sct_counts2_success <- sct_counts2 %>%
+    filter(missing == FALSE) %>%
     select(-missing)
 
-### no match after using primary & alt gene names ()
-sct_counts2_remain <-  sct_counts2 %>% 
-    filter(missing == TRUE) %>% 
+# Proteins with no RNA-Seq match
+sct_counts2_remain <-  sct_counts2 %>%
+    filter(missing == TRUE) %>%
     select(Entry, gene)
 
 # save
 saveRDS(sct_counts2_remain, file = "output/RD4-RNA-Seq/RD4-proteins_no_RNA-Seq.rds")
 
-
-
-
-## combine matching results
-sct_counts <- bind_rows(sct_counts1_success, sct_counts2_success, sct_counts2_remain) %>% 
+# Combine all matching results
+sct_counts <- bind_rows(sct_counts1_success, sct_counts2_success, sct_counts2_remain) %>%
     select(-gene)
 
 
     
-# relate RNA-Seq counts to meta data
+# Relate RNA-Seq counts to meta data
 sct_counts <- sct_counts %>% 
     t() %>%
     as.data.frame() %>% 
@@ -145,40 +143,40 @@ sct_counts <- sct_counts %>%
     slice(2:nrow(.)) %>% 
     `rownames<-`(NULL)
 
-sct_counts_meta <- sct_counts %>% 
-    left_join(meta, by = "cell") %>% 
-    relocate(celltype, .before = cell) %>% 
-    select(-cell) %>% 
+sct_counts_meta <- sct_counts %>%
+    left_join(meta, by = "cell") %>%
+    relocate(celltype, .before = cell) %>%
+    select(-cell) %>%
     mutate(across(!matches("celltype"), as.numeric))
 
-protein_distributions <- sct_counts_meta %>% 
-    group_by(celltype) %>% 
-    summarise(across(everything(), sum)) %>% 
-    ungroup() %>% 
+# Sum expression per cell type (alpha, beta, acinar only)
+protein_distributions <- sct_counts_meta %>%
+    group_by(celltype) %>%
+    summarise(across(everything(), sum)) %>%
+    ungroup() %>%
     filter(celltype %in% c("acinar", "alpha", "beta"))
 
-RNA_Seq_NA_proteins <-  protein_distributions[, colSums(is.na(protein_distributions)) != 0] %>% 
-    t() %>% 
-    as.data.frame() %>% 
-    rownames_to_column() %>% 
-    select(-c("V1", "V2", "V3")) %>% 
+# Track proteins with missing values
+RNA_Seq_NA_proteins <-  protein_distributions[, colSums(is.na(protein_distributions)) != 0] %>%
+    t() %>%
+    as.data.frame() %>%
+    rownames_to_column() %>%
+    select(-c("V1", "V2", "V3")) %>%
     rename(missing_proteins = rowname)
 
 protein_distributions <-  protein_distributions[, colSums(is.na(protein_distributions)) == 0]
 
-protein_ratios <- protein_distributions %>% 
+# Calculate cell type expression ratios
+protein_ratios <- protein_distributions %>%
     mutate(across(where(~ !is.character(.x) && sum(.x) != 0), \(x){x / sum(x)}))
 
-
-# CHECK islet markers: Pro-glucagon (P01275); Insulin (P01308); Secretogranin-2 (P13521);
-prot_islet <- protein_ratios %>% 
+# QC: Check islet markers (GCG, INS, SCG2)
+prot_islet <- protein_ratios %>%
     select(c("celltype", "P01275", "P01308", "P13521"))
 
-# CHECK acinar markers: Lithostathine-1-alpha (P05451); Lithostathine-1-beta (P48304);
-# Carboxypeptidase A1 (P15085)
-prot_acinar <- protein_ratios %>% 
+# QC: Check acinar markers (REG1A, REG1B, CPA1)
+prot_acinar <- protein_ratios %>%
     select(c("celltype", "P05451", "P48304", "P15085"))
-
 
 # Save
 saveRDS(protein_ratios, file = "output/RD4-RNA-Seq/RD4-RNA-Seq_cell_gene_ratios.rds")
