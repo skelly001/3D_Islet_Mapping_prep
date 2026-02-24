@@ -170,6 +170,13 @@ section { padding: var(--section-gap) 0; }
   display: flex; justify-content: space-between;
   padding: 0.5rem 0; font-size: 0.78rem; color: var(--text-dim);
 }
+.slider-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+}
+.slider-row .slider-wrapper { max-width: none; }
+@media (max-width: 900px) {
+  .slider-row { grid-template-columns: 1fr; }
+}
 /* ========== SECTION 4: PIPELINE ========== */
 .pipeline-track {
   display: flex; gap: 0; align-items: stretch; overflow-x: auto;
@@ -370,28 +377,15 @@ footer .links a { margin: 0 0.8rem; }
     <div class="slider-grid">
 
       <div class="slider-wrapper reveal">
-        <div class="slider-title">Cell Type Assignment vs. Insulin Expression</div>
+        <div class="slider-title">DAPI Fluorescence vs. CellPose Nuclear Segmentation</div>
         <div class="slider-compare" data-slider>
-          <img class="img-before" src="website/converted/cell_type_cropped.png" alt="Cell type assignment map" loading="lazy">
-          <img class="img-after" src="website/converted/INS_cropped.png" alt="Insulin protein expression map" loading="lazy">
+          <img class="img-before" src="website/converted/DAPI_fluorescence.jpg" alt="DAPI nuclear fluorescence" loading="lazy">
+          <img class="img-after" src="data/1-ImageJ_cell_ROI/Cellpose 2.0/DAPI_mask_for_fig_5.png" alt="CellPose 2.0 nuclear segmentation mask" loading="lazy">
           <div class="slider-handle"></div>
         </div>
         <div class="slider-labels">
-          <span><span style="color:var(--cell-acinar)">&#9632;</span> Acinar &nbsp;<span style="color:var(--cell-alpha)">&#9632;</span> Alpha &nbsp;<span style="color:var(--cell-beta)">&#9632;</span> Beta</span>
-          <span>INS (Insulin) &mdash; <span style="color:#191970">Low</span> to <span style="color:#ffd700">High</span></span>
-        </div>
-      </div>
-
-      <div class="slider-wrapper reveal">
-        <div class="slider-title">Cell Type Assignment vs. Glucagon Expression</div>
-        <div class="slider-compare" data-slider>
-          <img class="img-before" src="website/converted/cell_type_cropped.png" alt="Cell type assignment map" loading="lazy">
-          <img class="img-after" src="website/converted/GCG_cropped.png" alt="Glucagon protein expression map" loading="lazy">
-          <div class="slider-handle"></div>
-        </div>
-        <div class="slider-labels">
-          <span><span style="color:var(--cell-acinar)">&#9632;</span> Acinar &nbsp;<span style="color:var(--cell-alpha)">&#9632;</span> Alpha &nbsp;<span style="color:var(--cell-beta)">&#9632;</span> Beta</span>
-          <span>GCG (Glucagon) &mdash; <span style="color:#191970">Low</span> to <span style="color:#ffd700">High</span></span>
+          <span>DAPI Nuclear Stain</span>
+          <span>CellPose 2.0 Segmentation Mask</span>
         </div>
       </div>
 
@@ -405,6 +399,34 @@ footer .links a { margin: 0 0.8rem; }
         <div class="slider-labels">
           <span>DAPI Nuclear Stain</span>
           <span>Cell Boundary Segmentation</span>
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-wrapper reveal">
+          <div class="slider-title">Cell Type Assignment vs. Insulin Expression</div>
+          <div class="slider-compare" data-slider>
+            <img class="img-before" src="website/converted/cell_type_cropped.png" alt="Cell type assignment map" loading="lazy">
+            <img class="img-after" src="website/converted/INS_cropped.png" alt="Insulin protein expression map" loading="lazy">
+            <div class="slider-handle"></div>
+          </div>
+          <div class="slider-labels">
+            <span><span style="color:var(--cell-acinar)">&#9632;</span> Acinar &nbsp;<span style="color:var(--cell-alpha)">&#9632;</span> Alpha &nbsp;<span style="color:var(--cell-beta)">&#9632;</span> Beta</span>
+            <span>INS &mdash; <span style="color:#191970">Low</span> to <span style="color:#ffd700">High</span></span>
+          </div>
+        </div>
+
+        <div class="slider-wrapper reveal">
+          <div class="slider-title">Cell Type Assignment vs. Glucagon Expression</div>
+          <div class="slider-compare" data-slider>
+            <img class="img-before" src="website/converted/cell_type_cropped.png" alt="Cell type assignment map" loading="lazy">
+            <img class="img-after" src="website/converted/GCG_cropped.png" alt="Glucagon protein expression map" loading="lazy">
+            <div class="slider-handle"></div>
+          </div>
+          <div class="slider-labels">
+            <span><span style="color:var(--cell-acinar)">&#9632;</span> Acinar &nbsp;<span style="color:var(--cell-alpha)">&#9632;</span> Alpha &nbsp;<span style="color:var(--cell-beta)">&#9632;</span> Beta</span>
+            <span>GCG &mdash; <span style="color:#191970">Low</span> to <span style="color:#ffd700">High</span></span>
+          </div>
         </div>
       </div>
 
