@@ -75,6 +75,7 @@ azimuth-references/*/*/*
 
 # IDE settings
 .vscode/
+.claude/
 
 # HTML widget dependencies and generated HTML output
 output/RD0-3D_spatial_proteomics/spat3D_files/
