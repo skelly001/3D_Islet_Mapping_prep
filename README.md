@@ -2,7 +2,7 @@
 
 Pseudo-single-cell spatial proteomics of human pancreatic islet tissue. This repository contains the complete analysis pipeline and 2,215 protein abundance maps at cellular resolution.
 
-**[Browse the interactive protein maps](https://skelly001.github.io/3D_Islet_Mapping_prep/)**
+**[Browse the interactive protein maps](https://skelly001.github.io/3D_Islet_Mapping/)**
 
 ## Overview
 
@@ -30,7 +30,7 @@ This project maps protein expression in human pancreatic islets by combining:
 
 ## Website
 
-The companion website at [skelly001.github.io/3D_Islet_Mapping_prep](https://skelly001.github.io/3D_Islet_Mapping_prep/) features:
+The companion website at [skelly001.github.io/3D_Islet_Mapping](https://skelly001.github.io/3D_Islet_Mapping/) features:
 - Interactive slider comparisons between cell type maps and protein expression
 - Searchable gallery of all 2,215 protein maps
 - Pipeline visualization and methods summary

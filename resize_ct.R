@@ -1,0 +1,5 @@
+library(magick)
+ct <- image_read("website/converted/cell_type_cropped.png")
+ct_resized <- image_resize(ct, "959x960!")
+image_write(ct_resized, "website/converted/cell_type_cropped.png")
+cat("Done - resized to 959x960\n")

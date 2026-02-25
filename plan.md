@@ -2,7 +2,7 @@
 
 ## Context
 
-This repo (`skelly001/3D_Islet_Mapping_prep`) contains a 6-stage spatial proteomics pipeline that maps 2,215 proteins at cellular resolution in human pancreatic islet tissue. The user wants a visually striking portfolio website on GitHub Pages to showcase this work during their job search. The current `plan.md` in the repo is a starting sketch; this plan supersedes it with a much richer design.
+This repo (`skelly001/3D_Islet_Mapping`) contains a 6-stage spatial proteomics pipeline that maps 2,215 proteins at cellular resolution in human pancreatic islet tissue. The user wants a visually striking portfolio website on GitHub Pages to showcase this work during their job search. The current `plan.md` in the repo is a starting sketch; this plan supersedes it with a much richer design.
 
 **Key visual assets already in the repo:**
 - 2,215 protein map PNGs (~140KB each, 318MB total) — navy-to-yellow heatmaps on cell polygons
@@ -138,7 +138,7 @@ Converts 4 TIFF files (48MB each) to web-optimized JPEGs. Also crops slider comp
 
 **User must:** Enable Pages in repo Settings → Source: GitHub Actions
 
-**Live URL:** `https://skelly001.github.io/3D_Islet_Mapping_prep/`
+**Live URL:** `https://skelly001.github.io/3D_Islet_Mapping/`
 
 ---
 
@@ -188,5 +188,5 @@ Converts 4 TIFF files (48MB each) to web-optimized JPEGs. Also crops slider comp
 8. Test lightbox: click image → modal opens, arrow keys navigate, ESC closes
 9. Check lazy loading: open Network tab, scroll slowly, verify images load on demand
 10. Test mobile responsive: resize to 375px width, verify all sections stack correctly
-11. After push: verify `https://skelly001.github.io/3D_Islet_Mapping_prep/` is live
+11. After push: verify `https://skelly001.github.io/3D_Islet_Mapping/` is live
 12. Confirm `plan.md` is in the repo for future reference
